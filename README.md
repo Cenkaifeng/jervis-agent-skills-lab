@@ -39,10 +39,10 @@
 
 ## 同步 CI（subrepo-sync）
 
-仓库已配置 `.github/workflows/subrepo-sync.yml`：
+仓库已配置 `.github/workflows/manual-subrepo-sync.yml`（工作流名：`subrepo-sync`）：
 
-- `push main` 时自动同步变更 skill 到对应专仓
-- 支持 `workflow_dispatch` 手动触发：`changed | all | single`
+- `push main` 时自动同步（同步所有已启用映射的 skills）
+- 支持 `workflow_dispatch` 手动触发（可指定 `skill_name` 单独同步）
 
 需要在仓库 Secrets 配置：
 

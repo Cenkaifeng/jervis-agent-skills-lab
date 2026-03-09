@@ -1,10 +1,17 @@
-name: manual-subrepo-sync
+name: subrepo-sync
 
 on:
+  push:
+    branches: [main]
+    paths:
+      - 'skills/**'
+      - 'manifests/skills-index.yaml'
+      - 'scripts/sync-to-subrepos.sh'
+      - '.github/workflows/manual-subrepo-sync.yml'
   workflow_dispatch:
     inputs:
       skill_name:
-        description: 'Skill name to sync (empty means all enabled)'
+        description: 'Optional skill name to sync (empty means all enabled)'
         required: false
         default: ''
 
@@ -35,9 +42,11 @@ jobs:
           git config --global url."https://x-access-token:${SKILL_SYNC_TOKEN}@github.com/".insteadOf "https://github.com/"
       - name: Sync
         env:
+          EVENT_NAME: ${{ github.event_name }}
           SKILL: ${{ github.event.inputs.skill_name }}
         run: |
-          if [ -n "$SKILL" ]; then
+          set -euo pipefail
+          if [ "$EVENT_NAME" = "workflow_dispatch" ] && [ -n "${SKILL:-}" ]; then
             ./scripts/sync-to-subrepos.sh "$SKILL"
           else
             ./scripts/sync-to-subrepos.sh

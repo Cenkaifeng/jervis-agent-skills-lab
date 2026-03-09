@@ -1,6 +1,6 @@
 name: subrepo-sync
 
-'on':
+on:
   push:
     branches: [main]
     paths:
@@ -11,12 +11,18 @@ name: subrepo-sync
   workflow_dispatch:
     inputs:
       mode:
-        description: 'Sync mode: changed | all | single'
-        required: false
+        description: 'Sync mode'
+        required: true
         default: changed
+        type: choice
+        options:
+          - changed
+          - all
+          - single
       skill_name:
         description: 'Required when mode=single (e.g. readx)'
         required: false
+        type: string
 
 permissions:
   contents: write
@@ -40,20 +46,14 @@ jobs:
           python -m pip install --upgrade pip
           pip install pyyaml
 
-      - name: Validate secret
+      - name: Validate and configure token
         env:
           SKILL_SYNC_TOKEN: ${{ secrets.SKILL_SYNC_TOKEN }}
         run: |
           if [ -z "$SKILL_SYNC_TOKEN" ]; then
             echo "Missing SKILL_SYNC_TOKEN secret."
-            echo "Create a PAT with repo scope and add it to repo secrets as SKILL_SYNC_TOKEN."
             exit 1
           fi
-
-      - name: Configure git auth
-        env:
-          SKILL_SYNC_TOKEN: ${{ secrets.SKILL_SYNC_TOKEN }}
-        run: |
           git config --global user.name "skills-sync-bot"
           git config --global user.email "skills-sync-bot@users.noreply.github.com"
           git config --global url."https://x-access-token:${SKILL_SYNC_TOKEN}@github.com/".insteadOf "https://github.com/"
@@ -103,13 +103,12 @@ PY
                 ;;
             esac
           else
+            # push event: sync only changed skills, fallback to all enabled
             if [ -n "${BEFORE_SHA:-}" ] && [ "$BEFORE_SHA" != "0000000000000000000000000000000000000000" ]; then
               SKILLS="$(git diff --name-only "$BEFORE_SHA" "$HEAD_SHA" | awk -F/ '/^skills\/[^\/]+\// {print $2}' | sort -u)"
             else
               SKILLS="$(git diff --name-only HEAD~1 HEAD | awk -F/ '/^skills\/[^\/]+\// {print $2}' | sort -u)"
             fi
-
-            # if only mapping/script changes and no skill folder changed, sync all enabled
             if [ -z "$SKILLS" ]; then
               SKILLS="$(list_enabled | sort -u)"
             fi
@@ -118,11 +117,10 @@ PY
           echo "skills<<EOF" >> "$GITHUB_OUTPUT"
           echo "$SKILLS" >> "$GITHUB_OUTPUT"
           echo "EOF" >> "$GITHUB_OUTPUT"
-
           echo "Target skills:" 
           echo "$SKILLS"
 
-      - name: Run selective sync
+      - name: Run sync
         run: |
           set -euo pipefail
           SKILLS="${{ steps.targets.outputs.skills }}"

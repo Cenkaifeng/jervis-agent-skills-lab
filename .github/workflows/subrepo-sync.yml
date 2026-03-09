@@ -1,0 +1,137 @@
+name: subrepo-sync
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'skills/**'
+      - 'manifests/skills-index.yaml'
+      - 'scripts/sync-to-subrepos.sh'
+      - '.github/workflows/subrepo-sync.yml'
+  workflow_dispatch:
+    inputs:
+      mode:
+        description: 'Sync mode: changed | all | single'
+        required: false
+        default: changed
+      skill_name:
+        description: 'Required when mode=single (e.g. readx)'
+        required: false
+
+permissions:
+  contents: read
+
+jobs:
+  sync:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install pyyaml
+
+      - name: Validate secret
+        env:
+          SKILL_SYNC_TOKEN: ${{ secrets.SKILL_SYNC_TOKEN }}
+        run: |
+          if [ -z "$SKILL_SYNC_TOKEN" ]; then
+            echo "Missing SKILL_SYNC_TOKEN secret."
+            echo "Create a PAT with repo scope and add it to repo secrets as SKILL_SYNC_TOKEN."
+            exit 1
+          fi
+
+      - name: Configure git auth
+        env:
+          SKILL_SYNC_TOKEN: ${{ secrets.SKILL_SYNC_TOKEN }}
+        run: |
+          git config --global user.name "skills-sync-bot"
+          git config --global user.email "skills-sync-bot@users.noreply.github.com"
+          git config --global url."https://x-access-token:${SKILL_SYNC_TOKEN}@github.com/".insteadOf "https://github.com/"
+
+      - name: Resolve target skills
+        id: targets
+        env:
+          EVENT_NAME: ${{ github.event_name }}
+          BEFORE_SHA: ${{ github.event.before }}
+          HEAD_SHA: ${{ github.sha }}
+          INPUT_MODE: ${{ github.event.inputs.mode }}
+          INPUT_SKILL: ${{ github.event.inputs.skill_name }}
+        run: |
+          set -euo pipefail
+
+          list_enabled() {
+            python - <<'PY'
+import yaml
+from pathlib import Path
+p=Path('manifests/skills-index.yaml')
+data=yaml.safe_load(p.read_text(encoding='utf-8')) or {}
+for s in data.get('skills', []):
+    sub=s.get('subrepo') or {}
+    if sub.get('enabled'):
+        print(s.get('name',''))
+PY
+          }
+
+          if [ "$EVENT_NAME" = "workflow_dispatch" ]; then
+            mode="${INPUT_MODE:-changed}"
+            case "$mode" in
+              all)
+                SKILLS="$(list_enabled | sort -u)"
+                ;;
+              single)
+                if [ -z "${INPUT_SKILL:-}" ]; then
+                  echo "mode=single requires skill_name"
+                  exit 1
+                fi
+                SKILLS="$INPUT_SKILL"
+                ;;
+              changed|*)
+                SKILLS="$(git diff --name-only HEAD~1 HEAD | awk -F/ '/^skills\/[^\/]+\// {print $2}' | sort -u)"
+                if [ -z "$SKILLS" ]; then
+                  SKILLS="$(list_enabled | sort -u)"
+                fi
+                ;;
+            esac
+          else
+            if [ -n "${BEFORE_SHA:-}" ] && [ "$BEFORE_SHA" != "0000000000000000000000000000000000000000" ]; then
+              SKILLS="$(git diff --name-only "$BEFORE_SHA" "$HEAD_SHA" | awk -F/ '/^skills\/[^\/]+\// {print $2}' | sort -u)"
+            else
+              SKILLS="$(git diff --name-only HEAD~1 HEAD | awk -F/ '/^skills\/[^\/]+\// {print $2}' | sort -u)"
+            fi
+
+            # if only mapping/script changes and no skill folder changed, sync all enabled
+            if [ -z "$SKILLS" ]; then
+              SKILLS="$(list_enabled | sort -u)"
+            fi
+          fi
+
+          echo "skills<<EOF" >> "$GITHUB_OUTPUT"
+          echo "$SKILLS" >> "$GITHUB_OUTPUT"
+          echo "EOF" >> "$GITHUB_OUTPUT"
+
+          echo "Target skills:" 
+          echo "$SKILLS"
+
+      - name: Run selective sync
+        run: |
+          set -euo pipefail
+          SKILLS="${{ steps.targets.outputs.skills }}"
+          if [ -z "$SKILLS" ]; then
+            echo "No skills resolved; exiting."
+            exit 0
+          fi
+          while IFS= read -r skill; do
+            [ -n "$skill" ] || continue
+            echo "=== Sync $skill ==="
+            ./scripts/sync-to-subrepos.sh "$skill"
+          done <<< "$SKILLS"

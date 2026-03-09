@@ -37,6 +37,17 @@
 ./scripts/package-all.sh
 ```
 
+## 同步 CI（subrepo-sync）
+
+仓库已配置 `.github/workflows/subrepo-sync.yml`：
+
+- `push main` 时自动同步变更 skill 到对应专仓
+- 支持 `workflow_dispatch` 手动触发：`changed | all | single`
+
+需要在仓库 Secrets 配置：
+
+- `SKILL_SYNC_TOKEN`：对 `Cenkaifeng/*` 专仓有写权限的 PAT（`repo` scope）
+
 ## 同步策略
 
 - 单个 skill 小版本升级（PATCH/MINOR）后：

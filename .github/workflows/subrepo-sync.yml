@@ -1,6 +1,6 @@
 name: subrepo-sync
 
-on:
+'on':
   push:
     branches: [main]
     paths:
@@ -19,7 +19,7 @@ on:
         required: false
 
 permissions:
-  contents: read
+  contents: write
 
 jobs:
   sync:

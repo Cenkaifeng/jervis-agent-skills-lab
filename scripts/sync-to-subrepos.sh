@@ -61,13 +61,20 @@ for line in "${ENTRIES[@]}"; do
 
   target="$WORKDIR/$name"
   rm -rf "$target"
-  git clone --depth 1 --branch "$branch" "https://$repo" "$target" >/dev/null 2>&1 || {
-    # allow repo values like github.com/org/repo without scheme
-    git clone --depth 1 --branch "$branch" "https://${repo#https://}" "$target"
-  }
+
+  repo_url="https://${repo#https://}"
+  if git clone --depth 1 --branch "$branch" "$repo_url" "$target" >/dev/null 2>&1; then
+    :
+  else
+    # fallback for empty repos or missing branch
+    git clone "$repo_url" "$target" >/dev/null 2>&1 || git clone "$repo_url" "$target"
+    pushd "$target" >/dev/null
+    git checkout -B "$branch" >/dev/null 2>&1 || true
+    popd >/dev/null
+  fi
 
   find "$target" -mindepth 1 -maxdepth 1 ! -name .git -exec rm -rf {} +
-  rsync -a --delete "$SRC/" "$target/"
+  rsync -a --delete --exclude='.git' "$SRC/" "$target/"
 
   pushd "$target" >/dev/null
   if [ -n "$(git status --porcelain)" ]; then

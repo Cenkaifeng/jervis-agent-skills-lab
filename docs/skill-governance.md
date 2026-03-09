@@ -2,9 +2,14 @@
 
 ## 单一事实源
 
-- 统一以本仓 `skills/` 为开发源
+- 统一以本仓 `skills/` 为开发源（Monorepo First）
 - `manifests/skills-index.yaml` 为版本与状态权威清单
 - `manifests/external-skills-excluded.yaml` 为外源技能排除清单
+
+## 仓库策略
+
+- 当前阶段不维护 skill 专有仓库，避免治理分叉
+- 所有变更仅在 `jervis-agent-skills-lab` 内提交、评审、发布
 
 ## 收录边界
 

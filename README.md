@@ -23,12 +23,11 @@
 ## 目录
 
 - `skills/`：托管中的 skill（每个子目录一个 skill）
-- `manifests/skills-index.yaml`：技能索引（版本、状态、来源、同步映射）
+- `manifests/skills-index.yaml`：技能索引（版本、状态、来源）
 - `manifests/migration-candidates.yaml`：现有技能迁移候选清单
 - `scripts/validate-all.sh`：统一质量门校验入口
 - `scripts/package-all.sh`：统一打包入口
-- `scripts/sync-to-subrepos.sh`：同步 skill 到专有仓库入口
-- `docs/`：贡献、升格策略与治理规范（含 `subrepo-plan.md`）
+- `docs/`：贡献、升格策略与治理规范
 
 ## 快速开始
 
@@ -37,21 +36,11 @@
 ./scripts/package-all.sh
 ```
 
-## 同步 CI（subrepo-sync）
+## 发布策略（Monorepo First）
 
-仓库已配置 `.github/workflows/manual-subrepo-sync.yml`（工作流名：`subrepo-sync`）：
-
-- `push main` 时自动同步（同步所有已启用映射的 skills）
-- 支持 `workflow_dispatch` 手动触发（可指定 `skill_name` 单独同步）
-
-需要在仓库 Secrets 配置：
-
-- `SKILL_SYNC_TOKEN`：对 `Cenkaifeng/*` 专仓有写权限的 PAT（`repo` scope）
-
-## 同步策略
-
-- 单个 skill 小版本升级（PATCH/MINOR）后：
+- 所有 skills 统一在本仓管理与迭代（单一事实源）
+- 小版本升级（PATCH/MINOR）后：
   1) 更新 `skills/` 内容
   2) 更新 `manifests/skills-index.yaml`
-  3) 若该 skill 已拆分专仓，执行 `scripts/sync-to-subrepos.sh`
+  3) 通过 `validate-all.sh` 与 `package-all.sh` 校验与打包
 

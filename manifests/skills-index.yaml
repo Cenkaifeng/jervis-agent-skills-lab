@@ -14,11 +14,6 @@ skills:
   path: skills/crawl-supabase-base
   owner: cenkaifeng
   quality_gate: pending
-  subrepo:
-    enabled: true
-    repo: github.com/Cenkaifeng/skill-crawl-supabase-base
-    branch: main
-  last_sync_commit: 4f7e4ba32717f6560f4426a251bef0427b7d4ec7
 - name: finance-daily-orchestrator
   version: 0.1.0
   status: incubating
@@ -26,11 +21,6 @@ skills:
   path: skills/finance-daily-orchestrator
   owner: cenkaifeng
   quality_gate: pending
-  subrepo:
-    enabled: true
-    repo: github.com/Cenkaifeng/skill-finance-daily-orchestrator
-    branch: main
-  last_sync_commit: 5a9ed938725c589a3b8cf05e39251d233afda088
 - name: finance-data-fetch
   version: 0.1.0
   status: incubating
@@ -38,11 +28,6 @@ skills:
   path: skills/finance-data-fetch
   owner: cenkaifeng
   quality_gate: pending
-  subrepo:
-    enabled: true
-    repo: github.com/Cenkaifeng/skill-finance-data-fetch
-    branch: main
-  last_sync_commit: b9d3410be7d16953098333ba93009b8fea890cb7
 - name: finance-report-render
   version: 0.1.0
   status: incubating
@@ -50,11 +35,6 @@ skills:
   path: skills/finance-report-render
   owner: cenkaifeng
   quality_gate: pending
-  subrepo:
-    enabled: true
-    repo: github.com/Cenkaifeng/skill-finance-report-render
-    branch: main
-  last_sync_commit: b43829a35e525228ed8ada3b48c5c111e6a76264
 - name: multi-agent-orchestrator-trial
   version: 0.1.0
   status: incubating
@@ -62,11 +42,6 @@ skills:
   path: skills/multi-agent-orchestrator-trial
   owner: cenkaifeng
   quality_gate: pending
-  subrepo:
-    enabled: true
-    repo: github.com/Cenkaifeng/skill-multi-agent-orchestrator-trial
-    branch: main
-  last_sync_commit: 7e17ec86cb2e3983866a9c86c8a6818d6f618f04
 - name: project-manager-table-insights
   version: 0.1.0
   status: incubating
@@ -74,11 +49,6 @@ skills:
   path: skills/project-manager-table-insights
   owner: cenkaifeng
   quality_gate: pending
-  subrepo:
-    enabled: true
-    repo: github.com/Cenkaifeng/skill-project-manager-table-insights
-    branch: main
-  last_sync_commit: 6d3586fd63d8e10aa766bcc035579ccc3614b128
 - name: readx
   version: 0.1.0
   status: incubating
@@ -86,8 +56,3 @@ skills:
   path: skills/readx
   owner: cenkaifeng
   quality_gate: pending
-  subrepo:
-    enabled: true
-    repo: github.com/Cenkaifeng/skill-readx
-    branch: main
-  last_sync_commit: b60f0c3cf070b782e5ac4ac675bae7a9171e0e9a

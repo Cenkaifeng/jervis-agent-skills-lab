@@ -17,10 +17,11 @@
 - promoted：公共复用，稳定维护
 - deprecated：计划下线或替代
 
-## 同步要求
+## 发布要求（Monorepo）
 
-promoted/active 状态 skill 若已配置专仓映射：
+promoted/active 状态 skill 发布前必须：
 
-- 主仓每次 PATCH/MINOR 升级后，必须同步专仓
-- 同步失败时，禁止发布
+- 在主仓完成 PATCH/MINOR 版本更新与变更记录
+- 通过统一质量门（validate + package）
+- 保持 `skills-index.yaml` 状态与版本信息一致
 

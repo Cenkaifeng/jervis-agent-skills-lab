@@ -1,0 +1,28 @@
+generated_at: 2026-03-09
+rule: Exclude externally downloaded skills from this repository.
+source_heuristic: skills containing .clawhub/origin.json are treated as external by default.
+excluded_skills:
+  - name: agent-browser
+    reason: external-source
+  - name: clawddocs
+    reason: external-source
+  - name: csv-pipeline
+    reason: external-source
+  - name: finance-skill
+    reason: external-source
+  - name: find-skills
+    reason: external-source
+  - name: multi-search-engine
+    reason: external-source
+  - name: searxng
+    reason: external-source
+  - name: self-improving-agent
+    reason: external-source
+  - name: session-logs
+    reason: external-source
+  - name: sheetsmith
+    reason: external-source
+  - name: yahoo-finance
+    reason: external-source
+  - name: yahoo-finance-cli
+    reason: external-source

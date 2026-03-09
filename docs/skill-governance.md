@@ -4,6 +4,12 @@
 
 - 统一以本仓 `skills/` 为开发源
 - `manifests/skills-index.yaml` 为版本与状态权威清单
+- `manifests/external-skills-excluded.yaml` 为外源技能排除清单
+
+## 收录边界
+
+- 仅纳管自研或共同开发、具备复用价值的 skills
+- 外源下载 skills 不进入本仓，避免供应链污染与版权/维护边界不清
 
 ## 标准约束
 

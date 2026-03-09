@@ -10,21 +10,9 @@ candidates:
     source_path: ../skills/readx
     recommendation: promote
     priority: high
-  - name: sheetsmith
-    source_path: ../skills/sheetsmith
-    recommendation: promote
-    priority: high
-  - name: csv-pipeline
-    source_path: ../skills/csv-pipeline
-    recommendation: promote
-    priority: high
   - name: project-manager-table-insights
     source_path: ../skills/project-manager-table-insights
     recommendation: promote
-    priority: medium
-  - name: multi-search-engine
-    source_path: ../skills/multi-search-engine
-    recommendation: incubate
     priority: medium
   - name: finance-data-fetch
     source_path: ../skills/finance-data-fetch
@@ -36,5 +24,13 @@ candidates:
     priority: medium
   - name: finance-daily-orchestrator
     source_path: ../skills/finance-daily-orchestrator
+    recommendation: incubate
+    priority: medium
+  - name: crawl-supabase-base
+    source_path: ../skills/crawl-supabase-base
+    recommendation: incubate
+    priority: low
+  - name: multi-agent-orchestrator-trial
+    source_path: ../skills/multi-agent-orchestrator-trial
     recommendation: incubate
     priority: medium

@@ -28,7 +28,7 @@
 - `scripts/validate-all.sh`：统一质量门校验入口
 - `scripts/package-all.sh`：统一打包入口
 - `scripts/sync-to-subrepos.sh`：同步 skill 到专有仓库入口
-- `docs/`：贡献、升格策略与治理规范
+- `docs/`：贡献、升格策略与治理规范（含 `subrepo-plan.md`）
 
 ## 快速开始
 

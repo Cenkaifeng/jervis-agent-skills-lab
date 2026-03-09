@@ -1,0 +1,235 @@
+version: 1
+updated_at: 2026-03-09
+standards:
+  implementation: docs/skill-implementation-standard.md
+  baseline: docs/skill-standard-anthropic-claude.md
+
+skills:
+  - name: agent-browser
+    version: 0.1.0
+    status: incubating
+    source: workspace-migrated
+    path: skills/agent-browser
+    owner: cenkaifeng
+    quality_gate: pending
+    subrepo:
+      enabled: false
+      repo: null
+      branch: main
+    last_sync_commit: null
+  - name: clawddocs
+    version: 0.1.0
+    status: incubating
+    source: workspace-migrated
+    path: skills/clawddocs
+    owner: cenkaifeng
+    quality_gate: pending
+    subrepo:
+      enabled: false
+      repo: null
+      branch: main
+    last_sync_commit: null
+  - name: crawl-supabase-base
+    version: 0.1.0
+    status: incubating
+    source: workspace-migrated
+    path: skills/crawl-supabase-base
+    owner: cenkaifeng
+    quality_gate: pending
+    subrepo:
+      enabled: false
+      repo: null
+      branch: main
+    last_sync_commit: null
+  - name: csv-pipeline
+    version: 0.1.0
+    status: incubating
+    source: workspace-migrated
+    path: skills/csv-pipeline
+    owner: cenkaifeng
+    quality_gate: pending
+    subrepo:
+      enabled: false
+      repo: null
+      branch: main
+    last_sync_commit: null
+  - name: finance-daily-orchestrator
+    version: 0.1.0
+    status: incubating
+    source: workspace-migrated
+    path: skills/finance-daily-orchestrator
+    owner: cenkaifeng
+    quality_gate: pending
+    subrepo:
+      enabled: false
+      repo: null
+      branch: main
+    last_sync_commit: null
+  - name: finance-data-fetch
+    version: 0.1.0
+    status: incubating
+    source: workspace-migrated
+    path: skills/finance-data-fetch
+    owner: cenkaifeng
+    quality_gate: pending
+    subrepo:
+      enabled: false
+      repo: null
+      branch: main
+    last_sync_commit: null
+  - name: finance-report-render
+    version: 0.1.0
+    status: incubating
+    source: workspace-migrated
+    path: skills/finance-report-render
+    owner: cenkaifeng
+    quality_gate: pending
+    subrepo:
+      enabled: false
+      repo: null
+      branch: main
+    last_sync_commit: null
+  - name: finance-skill
+    version: 0.1.0
+    status: incubating
+    source: workspace-migrated
+    path: skills/finance-skill
+    owner: cenkaifeng
+    quality_gate: pending
+    subrepo:
+      enabled: false
+      repo: null
+      branch: main
+    last_sync_commit: null
+  - name: find-skills
+    version: 0.1.0
+    status: incubating
+    source: workspace-migrated
+    path: skills/find-skills
+    owner: cenkaifeng
+    quality_gate: pending
+    subrepo:
+      enabled: false
+      repo: null
+      branch: main
+    last_sync_commit: null
+  - name: multi-agent-orchestrator-trial
+    version: 0.1.0
+    status: incubating
+    source: workspace-migrated
+    path: skills/multi-agent-orchestrator-trial
+    owner: cenkaifeng
+    quality_gate: pending
+    subrepo:
+      enabled: false
+      repo: null
+      branch: main
+    last_sync_commit: null
+  - name: multi-search-engine
+    version: 0.1.0
+    status: incubating
+    source: workspace-migrated
+    path: skills/multi-search-engine
+    owner: cenkaifeng
+    quality_gate: pending
+    subrepo:
+      enabled: false
+      repo: null
+      branch: main
+    last_sync_commit: null
+  - name: project-manager-table-insights
+    version: 0.1.0
+    status: incubating
+    source: workspace-migrated
+    path: skills/project-manager-table-insights
+    owner: cenkaifeng
+    quality_gate: pending
+    subrepo:
+      enabled: false
+      repo: null
+      branch: main
+    last_sync_commit: null
+  - name: readx
+    version: 0.1.0
+    status: incubating
+    source: workspace-migrated
+    path: skills/readx
+    owner: cenkaifeng
+    quality_gate: pending
+    subrepo:
+      enabled: false
+      repo: null
+      branch: main
+    last_sync_commit: null
+  - name: searxng
+    version: 0.1.0
+    status: incubating
+    source: workspace-migrated
+    path: skills/searxng
+    owner: cenkaifeng
+    quality_gate: pending
+    subrepo:
+      enabled: false
+      repo: null
+      branch: main
+    last_sync_commit: null
+  - name: self-improving-agent
+    version: 0.1.0
+    status: incubating
+    source: workspace-migrated
+    path: skills/self-improving-agent
+    owner: cenkaifeng
+    quality_gate: pending
+    subrepo:
+      enabled: false
+      repo: null
+      branch: main
+    last_sync_commit: null
+  - name: session-logs
+    version: 0.1.0
+    status: incubating
+    source: workspace-migrated
+    path: skills/session-logs
+    owner: cenkaifeng
+    quality_gate: pending
+    subrepo:
+      enabled: false
+      repo: null
+      branch: main
+    last_sync_commit: null
+  - name: sheetsmith
+    version: 0.1.0
+    status: incubating
+    source: workspace-migrated
+    path: skills/sheetsmith
+    owner: cenkaifeng
+    quality_gate: pending
+    subrepo:
+      enabled: false
+      repo: null
+      branch: main
+    last_sync_commit: null
+  - name: yahoo-finance
+    version: 0.1.0
+    status: incubating
+    source: workspace-migrated
+    path: skills/yahoo-finance
+    owner: cenkaifeng
+    quality_gate: pending
+    subrepo:
+      enabled: false
+      repo: null
+      branch: main
+    last_sync_commit: null
+  - name: yahoo-finance-cli
+    version: 0.1.0
+    status: incubating
+    source: workspace-migrated
+    path: skills/yahoo-finance-cli
+    owner: cenkaifeng
+    quality_gate: pending
+    subrepo:
+      enabled: false
+      repo: null
+      branch: main
+    last_sync_commit: null

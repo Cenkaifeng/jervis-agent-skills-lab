@@ -1,0 +1,40 @@
+generated_at: 2026-03-09
+criteria:
+  - 高频使用
+  - 具备跨项目复用价值
+  - 输入输出稳定
+  - 能通过统一质量门
+
+candidates:
+  - name: readx
+    source_path: ../skills/readx
+    recommendation: promote
+    priority: high
+  - name: sheetsmith
+    source_path: ../skills/sheetsmith
+    recommendation: promote
+    priority: high
+  - name: csv-pipeline
+    source_path: ../skills/csv-pipeline
+    recommendation: promote
+    priority: high
+  - name: project-manager-table-insights
+    source_path: ../skills/project-manager-table-insights
+    recommendation: promote
+    priority: medium
+  - name: multi-search-engine
+    source_path: ../skills/multi-search-engine
+    recommendation: incubate
+    priority: medium
+  - name: finance-data-fetch
+    source_path: ../skills/finance-data-fetch
+    recommendation: incubate
+    priority: medium
+  - name: finance-report-render
+    source_path: ../skills/finance-report-render
+    recommendation: incubate
+    priority: medium
+  - name: finance-daily-orchestrator
+    source_path: ../skills/finance-daily-orchestrator
+    recommendation: incubate
+    priority: medium

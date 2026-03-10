@@ -78,6 +78,7 @@ Use `openclaw status --deep` when the user is really asking whether model usage/
 - If many sessions are active, rank the top few by token/context usage instead of listing everything.
 - Do not invent cost numbers.
 - If the user wants a persistent dashboard/report, propose creating a dedicated script or cron after first giving the live snapshot.
+- Highlight operational next steps when they are obvious: prepare fresh thread, note old-model residue, or flag stale large sessions.
 
 ## When to read more
 

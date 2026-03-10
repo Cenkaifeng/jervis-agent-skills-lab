@@ -37,7 +37,7 @@ Good response shape:
 - total active sessions inspected
 - model distribution
 - top 3 highest-occupancy sessions
-- one-line recommendation if cleanup/attention is warranted
+- recommendation block (fresh thread / old-model residue / stale-large sessions)
 
 ## 3) Agent-specific usage
 

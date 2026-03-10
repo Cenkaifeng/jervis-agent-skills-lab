@@ -9,6 +9,12 @@ from collections import Counter, defaultdict
 from typing import Any, Dict, List
 
 
+OLD_MODEL_AGE_DAYS = 3
+STALE_LARGE_AGE_DAYS = 3
+STALE_LARGE_PCT = 20.0
+PREPARE_FRESH_THREAD_PCT = 60.0
+
+
 def extract_json_payload(text: str) -> str:
     start = text.find("{")
     if start == -1:
@@ -34,6 +40,12 @@ def human_age(ms: int | None) -> str:
     if seconds < 86400:
         return f"{seconds // 3600}h"
     return f"{seconds // 86400}d"
+
+
+def age_days(ms: int | None) -> float:
+    if not isinstance(ms, int):
+        return 0.0
+    return ms / 1000 / 86400
 
 
 def pct_used(sess: Dict[str, Any]) -> float:
@@ -84,6 +96,56 @@ def summarize_agents(sessions: List[Dict[str, Any]]) -> Dict[str, Dict[str, Any]
     return by_agent
 
 
+def default_model(status: Dict[str, Any]) -> str | None:
+    return ((status.get("sessions") or {}).get("defaults") or {}).get("model")
+
+
+def build_recommendations(status: Dict[str, Any], sessions: List[Dict[str, Any]], warn_pct: float, crit_pct: float) -> List[str]:
+    recs: List[str] = []
+    default = default_model(status)
+    sorted_sessions = top_sessions(sessions, len(sessions))
+
+    hottest = sorted_sessions[0] if sorted_sessions else None
+    if hottest:
+        hottest_pct = pct_used(hottest)
+        if hottest_pct >= PREPARE_FRESH_THREAD_PCT:
+            recs.append(
+                f"{hottest.get('key')} 已到 {hottest_pct:.1f}% 上下文占用，建议准备新线程/新会话，避免后续压缩影响质量。"
+            )
+        elif hottest_pct >= warn_pct:
+            recs.append(
+                f"{hottest.get('key')} 已进入高占用区 ({hottest_pct:.1f}%)，继续长聊前值得留意上下文膨胀。"
+            )
+
+    legacy = [
+        s for s in sessions
+        if default and s.get("model") and s.get("model") != default and age_days(s.get("ageMs")) >= OLD_MODEL_AGE_DAYS
+    ]
+    if legacy:
+        sample = legacy[0]
+        recs.append(
+            f"检测到旧模型遗留会话 {sample.get('key')}（model={sample.get('model')}，age={human_age(sample.get('ageMs'))}）。这通常是历史会话，不代表当前路由异常。"
+        )
+
+    stale_large = [
+        s for s in sessions
+        if age_days(s.get("ageMs")) >= STALE_LARGE_AGE_DAYS and pct_used(s) >= STALE_LARGE_PCT
+    ]
+    if stale_large:
+        sample = stale_large[0]
+        recs.append(
+            f"存在较旧且仍偏大的会话 {sample.get('key')}（{pct_used(sample):.1f}% / age={human_age(sample.get('ageMs'))}），若短期不用可考虑让后续工作转到新会话。"
+        )
+
+    crits = [s for s in sessions if pct_used(s) >= crit_pct]
+    if crits:
+        recs.append(f"当前有 {len(crits)} 个会话达到 CRIT 阈值（>={crit_pct:.1f}%），优先处理这些会话的续聊策略。")
+
+    if not recs:
+        recs.append("当前未发现明显异常；模型分布和会话占用都在可接受范围内。")
+    return recs
+
+
 def render_text(
     status: Dict[str, Any],
     sessions_payload: Dict[str, Any],
@@ -98,6 +160,7 @@ def render_text(
     model_counts = Counter((s.get("model") or "unknown") for s in sessions)
     tops = top_sessions(sessions, top_n)
     agents = summarize_agents(sessions)
+    recs = build_recommendations(status, sessions, warn_pct, crit_pct)
 
     lines: List[str] = []
     gateway = status.get("gateway") or {}
@@ -135,6 +198,10 @@ def render_text(
         )
     if not agents:
         lines.append("- none")
+    lines.append("")
+    lines.append("Recommendations:")
+    for rec in recs:
+        lines.append(f"- {rec}")
     return "\n".join(lines)
 
 
@@ -185,6 +252,7 @@ def render_json(
             }
             for agent_id, item in sorted(agents.items())
         ],
+        "recommendations": build_recommendations(status, sessions, warn_pct, crit_pct),
     }
     return json.dumps(payload, ensure_ascii=False, indent=2)
 

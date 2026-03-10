@@ -100,9 +100,50 @@ def default_model(status: Dict[str, Any]) -> str | None:
     return ((status.get("sessions") or {}).get("defaults") or {}).get("model")
 
 
+def find_legacy_sessions(status: Dict[str, Any], sessions: List[Dict[str, Any]]) -> List[Dict[str, Any]]:
+    default = default_model(status)
+    return [
+        s for s in sessions
+        if default and s.get("model") and s.get("model") != default and age_days(s.get("ageMs")) >= OLD_MODEL_AGE_DAYS
+    ]
+
+
+def find_stale_large_sessions(sessions: List[Dict[str, Any]]) -> List[Dict[str, Any]]:
+    return [
+        s for s in sessions
+        if age_days(s.get("ageMs")) >= STALE_LARGE_AGE_DAYS and pct_used(s) >= STALE_LARGE_PCT
+    ]
+
+
+def find_anomaly_sessions(status: Dict[str, Any], sessions: List[Dict[str, Any]], warn_pct: float, crit_pct: float) -> List[Dict[str, Any]]:
+    seen: set[str] = set()
+    out: List[Dict[str, Any]] = []
+
+    for s in sessions:
+        percent = pct_used(s)
+        if percent >= warn_pct:
+            key = s.get("key") or ""
+            if key not in seen:
+                seen.add(key)
+                out.append(s)
+
+    for s in find_legacy_sessions(status, sessions):
+        key = s.get("key") or ""
+        if key not in seen:
+            seen.add(key)
+            out.append(s)
+
+    for s in find_stale_large_sessions(sessions):
+        key = s.get("key") or ""
+        if key not in seen:
+            seen.add(key)
+            out.append(s)
+
+    return sorted(out, key=lambda s: (pct_used(s), s.get("totalTokens") or 0), reverse=True)
+
+
 def build_recommendations(status: Dict[str, Any], sessions: List[Dict[str, Any]], warn_pct: float, crit_pct: float) -> List[str]:
     recs: List[str] = []
-    default = default_model(status)
     sorted_sessions = top_sessions(sessions, len(sessions))
 
     hottest = sorted_sessions[0] if sorted_sessions else None
@@ -117,20 +158,14 @@ def build_recommendations(status: Dict[str, Any], sessions: List[Dict[str, Any]]
                 f"{hottest.get('key')} 已进入高占用区 ({hottest_pct:.1f}%)，继续长聊前值得留意上下文膨胀。"
             )
 
-    legacy = [
-        s for s in sessions
-        if default and s.get("model") and s.get("model") != default and age_days(s.get("ageMs")) >= OLD_MODEL_AGE_DAYS
-    ]
+    legacy = find_legacy_sessions(status, sessions)
     if legacy:
         sample = legacy[0]
         recs.append(
             f"检测到旧模型遗留会话 {sample.get('key')}（model={sample.get('model')}，age={human_age(sample.get('ageMs'))}）。这通常是历史会话，不代表当前路由异常。"
         )
 
-    stale_large = [
-        s for s in sessions
-        if age_days(s.get("ageMs")) >= STALE_LARGE_AGE_DAYS and pct_used(s) >= STALE_LARGE_PCT
-    ]
+    stale_large = find_stale_large_sessions(sessions)
     if stale_large:
         sample = stale_large[0]
         recs.append(
@@ -146,16 +181,14 @@ def build_recommendations(status: Dict[str, Any], sessions: List[Dict[str, Any]]
     return recs
 
 
-def render_text(
+def render_text_full(
     status: Dict[str, Any],
-    sessions_payload: Dict[str, Any],
+    sessions: List[Dict[str, Any]],
     top_n: int,
     warn_pct: float,
     crit_pct: float,
     agent: str | None,
-    min_pct: float | None,
 ) -> str:
-    sessions = filter_sessions(sessions_payload.get("sessions", []), agent=agent, min_pct=min_pct)
     defaults = (status.get("sessions") or {}).get("defaults") or {}
     model_counts = Counter((s.get("model") or "unknown") for s in sessions)
     tops = top_sessions(sessions, top_n)
@@ -205,22 +238,71 @@ def render_text(
     return "\n".join(lines)
 
 
+def render_text_anomaly(
+    status: Dict[str, Any],
+    sessions: List[Dict[str, Any]],
+    warn_pct: float,
+    crit_pct: float,
+    agent: str | None,
+) -> str:
+    anomaly_sessions = find_anomaly_sessions(status, sessions, warn_pct, crit_pct)
+    recs = build_recommendations(status, sessions, warn_pct, crit_pct)
+    defaults = (status.get("sessions") or {}).get("defaults") or {}
+    gateway = status.get("gateway") or {}
+    version = (gateway.get("self") or {}).get("version") or gateway.get("appVersion") or "unknown"
+
+    lines: List[str] = []
+    lines.append(f"OpenClaw version: {version}")
+    lines.append(f"Default model: {defaults.get('model', 'unknown')} ({defaults.get('contextTokens', 'unknown')} ctx)")
+    lines.append(f"Anomaly sessions: {len(anomaly_sessions)}")
+    if agent:
+        lines.append(f"Agent filter: {agent}")
+    lines.append(f"Thresholds: WARN>={warn_pct:.1f}% · CRIT>={crit_pct:.1f}%")
+    lines.append("")
+    lines.append("Anomalies:")
+    if anomaly_sessions:
+        for s in anomaly_sessions:
+            percent = pct_used(s)
+            level = warning_level(percent, warn_pct, crit_pct)
+            tags: List[str] = []
+            if percent >= warn_pct:
+                tags.append(level)
+            default = default_model(status)
+            if default and s.get("model") and s.get("model") != default and age_days(s.get("ageMs")) >= OLD_MODEL_AGE_DAYS:
+                tags.append("LEGACY_MODEL")
+            if age_days(s.get("ageMs")) >= STALE_LARGE_AGE_DAYS and percent >= STALE_LARGE_PCT:
+                tags.append("STALE_LARGE")
+            tag_text = ",".join(tags) if tags else "INFO"
+            lines.append(
+                f"- [{tag_text}] {s.get('key')}: {s.get('totalTokens', 0)}/{s.get('contextTokens', 0)} "
+                f"({percent:.1f}%) · model={s.get('model')} · age={human_age(s.get('ageMs'))}"
+            )
+    else:
+        lines.append("- none")
+    lines.append("")
+    lines.append("Recommendations:")
+    for rec in recs:
+        lines.append(f"- {rec}")
+    return "\n".join(lines)
+
+
 def render_json(
     status: Dict[str, Any],
-    sessions_payload: Dict[str, Any],
+    sessions: List[Dict[str, Any]],
     top_n: int,
     warn_pct: float,
     crit_pct: float,
     agent: str | None,
-    min_pct: float | None,
+    mode: str,
 ) -> str:
-    sessions = filter_sessions(sessions_payload.get("sessions", []), agent=agent, min_pct=min_pct)
     defaults = (status.get("sessions") or {}).get("defaults") or {}
     model_counts = Counter((s.get("model") or "unknown") for s in sessions)
     tops = top_sessions(sessions, top_n)
     agents = summarize_agents(sessions)
     gateway = status.get("gateway") or {}
+    anomaly_sessions = find_anomaly_sessions(status, sessions, warn_pct, crit_pct)
     payload = {
+        "mode": mode,
         "openclawVersion": ((gateway.get("self") or {}).get("version")) or gateway.get("appVersion"),
         "defaultModel": defaults.get("model"),
         "defaultContextTokens": defaults.get("contextTokens"),
@@ -241,6 +323,21 @@ def render_json(
                 "ageMs": s.get("ageMs"),
             }
             for s in tops
+        ],
+        "anomalySessions": [
+            {
+                "key": s.get("key"),
+                "agentId": s.get("agentId"),
+                "model": s.get("model"),
+                "totalTokens": s.get("totalTokens"),
+                "contextTokens": s.get("contextTokens"),
+                "percentUsed": round(pct_used(s), 2),
+                "warningLevel": warning_level(pct_used(s), warn_pct, crit_pct),
+                "ageMs": s.get("ageMs"),
+                "legacyModel": bool(default_model(status) and s.get("model") and s.get("model") != default_model(status) and age_days(s.get("ageMs")) >= OLD_MODEL_AGE_DAYS),
+                "staleLarge": bool(age_days(s.get("ageMs")) >= STALE_LARGE_AGE_DAYS and pct_used(s) >= STALE_LARGE_PCT),
+            }
+            for s in anomaly_sessions
         ],
         "agents": [
             {
@@ -266,6 +363,7 @@ def main() -> int:
     parser.add_argument("--warn-pct", type=float, default=40.0, help="Warn threshold for context occupancy percent.")
     parser.add_argument("--crit-pct", type=float, default=70.0, help="Critical threshold for context occupancy percent.")
     parser.add_argument("--min-pct", type=float, help="Only include sessions at or above this occupancy percent.")
+    parser.add_argument("--mode", choices=["full", "anomaly"], default="full", help="full=complete report; anomaly=only items worth attention.")
     parser.add_argument("--format", choices=["text", "json"], default="text")
     args = parser.parse_args()
 
@@ -283,10 +381,15 @@ def main() -> int:
         print(f"failed to parse OpenClaw JSON output: {exc}", file=sys.stderr)
         return 1
 
+    sessions = filter_sessions(sessions_payload.get("sessions", []), agent=args.agent, min_pct=args.min_pct)
+
     if args.format == "json":
-        print(render_json(status, sessions_payload, args.top, args.warn_pct, args.crit_pct, args.agent, args.min_pct))
+        print(render_json(status, sessions, args.top, args.warn_pct, args.crit_pct, args.agent, args.mode))
     else:
-        print(render_text(status, sessions_payload, args.top, args.warn_pct, args.crit_pct, args.agent, args.min_pct))
+        if args.mode == "anomaly":
+            print(render_text_anomaly(status, sessions, args.warn_pct, args.crit_pct, args.agent))
+        else:
+            print(render_text_full(status, sessions, args.top, args.warn_pct, args.crit_pct, args.agent))
     return 0
 
 

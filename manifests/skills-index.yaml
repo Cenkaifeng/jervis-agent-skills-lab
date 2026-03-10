@@ -56,3 +56,10 @@ skills:
   path: skills/readx
   owner: cenkaifeng
   quality_gate: pending
+- name: openclaw-model-usage
+  version: 0.1.0
+  status: incubating
+  source: self-designed
+  path: skills/openclaw-model-usage
+  owner: cenkaifeng
+  quality_gate: pending

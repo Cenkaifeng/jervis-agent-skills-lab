@@ -24,6 +24,7 @@ python {baseDir}/scripts/report_usage.py --format text
 python {baseDir}/scripts/report_usage.py --agent jarvis --active-hours 24
 python {baseDir}/scripts/report_usage.py --min-pct 40
 python {baseDir}/scripts/report_usage.py --mode anomaly
+python {baseDir}/scripts/report_usage.py --mode brief
 ```
 
 Or use `sessions_list(limit=...)` first when you want a manual/custom answer.

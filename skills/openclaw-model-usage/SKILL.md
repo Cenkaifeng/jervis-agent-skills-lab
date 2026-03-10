@@ -23,6 +23,7 @@ python {baseDir}/scripts/report_usage.py --format json
 python {baseDir}/scripts/report_usage.py --agent jarvis --active-hours 24
 python {baseDir}/scripts/report_usage.py --min-pct 40 --warn-pct 40 --crit-pct 70
 python {baseDir}/scripts/report_usage.py --mode anomaly
+python {baseDir}/scripts/report_usage.py --mode brief
 ```
 
 Use the script for repeatable overview reports; use direct tools (`session_status`, `sessions_list`) when you need a narrower or conversationally guided answer.

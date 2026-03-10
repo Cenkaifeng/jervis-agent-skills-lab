@@ -181,14 +181,7 @@ def build_recommendations(status: Dict[str, Any], sessions: List[Dict[str, Any]]
     return recs
 
 
-def render_text_full(
-    status: Dict[str, Any],
-    sessions: List[Dict[str, Any]],
-    top_n: int,
-    warn_pct: float,
-    crit_pct: float,
-    agent: str | None,
-) -> str:
+def render_text_full(status: Dict[str, Any], sessions: List[Dict[str, Any]], top_n: int, warn_pct: float, crit_pct: float, agent: str | None) -> str:
     defaults = (status.get("sessions") or {}).get("defaults") or {}
     model_counts = Counter((s.get("model") or "unknown") for s in sessions)
     tops = top_sessions(sessions, top_n)
@@ -215,20 +208,14 @@ def render_text_full(
     for s in tops:
         percent = pct_used(s)
         level = warning_level(percent, warn_pct, crit_pct)
-        lines.append(
-            f"- [{level}] {s.get('key')}: {s.get('totalTokens', 0)}/{s.get('contextTokens', 0)} "
-            f"({percent:.1f}%) · model={s.get('model')} · age={human_age(s.get('ageMs'))}"
-        )
+        lines.append(f"- [{level}] {s.get('key')}: {s.get('totalTokens', 0)}/{s.get('contextTokens', 0)} ({percent:.1f}%) · model={s.get('model')} · age={human_age(s.get('ageMs'))}")
     if not tops:
         lines.append("- none")
     lines.append("")
     lines.append("Agent summary:")
     for agent_id, item in sorted(agents.items()):
         model_summary = ", ".join(f"{m}×{c}" for m, c in item["models"].most_common())
-        lines.append(
-            f"- {agent_id}: sessions={item['count']} · totalTokens={item['totalTokens']} "
-            f"· peakOccupancy={item['maxPct']:.1f}% · models={model_summary}"
-        )
+        lines.append(f"- {agent_id}: sessions={item['count']} · totalTokens={item['totalTokens']} · peakOccupancy={item['maxPct']:.1f}% · models={model_summary}")
     if not agents:
         lines.append("- none")
     lines.append("")
@@ -238,13 +225,7 @@ def render_text_full(
     return "\n".join(lines)
 
 
-def render_text_anomaly(
-    status: Dict[str, Any],
-    sessions: List[Dict[str, Any]],
-    warn_pct: float,
-    crit_pct: float,
-    agent: str | None,
-) -> str:
+def render_text_anomaly(status: Dict[str, Any], sessions: List[Dict[str, Any]], warn_pct: float, crit_pct: float, agent: str | None) -> str:
     anomaly_sessions = find_anomaly_sessions(status, sessions, warn_pct, crit_pct)
     recs = build_recommendations(status, sessions, warn_pct, crit_pct)
     defaults = (status.get("sessions") or {}).get("defaults") or {}
@@ -273,10 +254,7 @@ def render_text_anomaly(
             if age_days(s.get("ageMs")) >= STALE_LARGE_AGE_DAYS and percent >= STALE_LARGE_PCT:
                 tags.append("STALE_LARGE")
             tag_text = ",".join(tags) if tags else "INFO"
-            lines.append(
-                f"- [{tag_text}] {s.get('key')}: {s.get('totalTokens', 0)}/{s.get('contextTokens', 0)} "
-                f"({percent:.1f}%) · model={s.get('model')} · age={human_age(s.get('ageMs'))}"
-            )
+            lines.append(f"- [{tag_text}] {s.get('key')}: {s.get('totalTokens', 0)}/{s.get('contextTokens', 0)} ({percent:.1f}%) · model={s.get('model')} · age={human_age(s.get('ageMs'))}")
     else:
         lines.append("- none")
     lines.append("")
@@ -286,15 +264,30 @@ def render_text_anomaly(
     return "\n".join(lines)
 
 
-def render_json(
-    status: Dict[str, Any],
-    sessions: List[Dict[str, Any]],
-    top_n: int,
-    warn_pct: float,
-    crit_pct: float,
-    agent: str | None,
-    mode: str,
-) -> str:
+def render_text_brief(status: Dict[str, Any], sessions: List[Dict[str, Any]], warn_pct: float, crit_pct: float, agent: str | None) -> str:
+    defaults = (status.get("sessions") or {}).get("defaults") or {}
+    gateway = status.get("gateway") or {}
+    version = (gateway.get("self") or {}).get("version") or gateway.get("appVersion") or "unknown"
+    hottest = top_sessions(sessions, 1)
+    hottest = hottest[0] if hottest else None
+    anomaly_sessions = find_anomaly_sessions(status, sessions, warn_pct, crit_pct)
+    legacy = find_legacy_sessions(status, sessions)
+    recs = build_recommendations(status, sessions, warn_pct, crit_pct)
+
+    lines: List[str] = []
+    lines.append(f"OpenClaw {version} · default={defaults.get('model', 'unknown')} · sessions={len(sessions)}")
+    if agent:
+        lines.append(f"scope: agent={agent}")
+    if hottest:
+        lines.append(f"hottest: {hottest.get('key')} · {pct_used(hottest):.1f}% · {hottest.get('model')}")
+    else:
+        lines.append("hottest: none")
+    lines.append(f"anomalies: {len(anomaly_sessions)} · legacy-model: {len(legacy)}")
+    lines.append(f"next: {recs[0]}")
+    return "\n".join(lines)
+
+
+def render_json(status: Dict[str, Any], sessions: List[Dict[str, Any]], top_n: int, warn_pct: float, crit_pct: float, agent: str | None, mode: str) -> str:
     defaults = (status.get("sessions") or {}).get("defaults") or {}
     model_counts = Counter((s.get("model") or "unknown") for s in sessions)
     tops = top_sessions(sessions, top_n)
@@ -311,44 +304,9 @@ def render_json(
         "warnThresholdPercent": warn_pct,
         "critThresholdPercent": crit_pct,
         "modelDistribution": [{"model": m, "count": c} for m, c in model_counts.most_common()],
-        "topSessions": [
-            {
-                "key": s.get("key"),
-                "agentId": s.get("agentId"),
-                "model": s.get("model"),
-                "totalTokens": s.get("totalTokens"),
-                "contextTokens": s.get("contextTokens"),
-                "percentUsed": round(pct_used(s), 2),
-                "warningLevel": warning_level(pct_used(s), warn_pct, crit_pct),
-                "ageMs": s.get("ageMs"),
-            }
-            for s in tops
-        ],
-        "anomalySessions": [
-            {
-                "key": s.get("key"),
-                "agentId": s.get("agentId"),
-                "model": s.get("model"),
-                "totalTokens": s.get("totalTokens"),
-                "contextTokens": s.get("contextTokens"),
-                "percentUsed": round(pct_used(s), 2),
-                "warningLevel": warning_level(pct_used(s), warn_pct, crit_pct),
-                "ageMs": s.get("ageMs"),
-                "legacyModel": bool(default_model(status) and s.get("model") and s.get("model") != default_model(status) and age_days(s.get("ageMs")) >= OLD_MODEL_AGE_DAYS),
-                "staleLarge": bool(age_days(s.get("ageMs")) >= STALE_LARGE_AGE_DAYS and pct_used(s) >= STALE_LARGE_PCT),
-            }
-            for s in anomaly_sessions
-        ],
-        "agents": [
-            {
-                "agentId": agent_id,
-                "sessionCount": item["count"],
-                "totalTokens": item["totalTokens"],
-                "peakOccupancy": round(item["maxPct"], 2),
-                "models": [{"model": m, "count": c} for m, c in item["models"].most_common()],
-            }
-            for agent_id, item in sorted(agents.items())
-        ],
+        "topSessions": [{"key": s.get("key"), "agentId": s.get("agentId"), "model": s.get("model"), "totalTokens": s.get("totalTokens"), "contextTokens": s.get("contextTokens"), "percentUsed": round(pct_used(s), 2), "warningLevel": warning_level(pct_used(s), warn_pct, crit_pct), "ageMs": s.get("ageMs")} for s in tops],
+        "anomalySessions": [{"key": s.get("key"), "agentId": s.get("agentId"), "model": s.get("model"), "totalTokens": s.get("totalTokens"), "contextTokens": s.get("contextTokens"), "percentUsed": round(pct_used(s), 2), "warningLevel": warning_level(pct_used(s), warn_pct, crit_pct), "ageMs": s.get("ageMs"), "legacyModel": bool(default_model(status) and s.get("model") and s.get("model") != default_model(status) and age_days(s.get("ageMs")) >= OLD_MODEL_AGE_DAYS), "staleLarge": bool(age_days(s.get("ageMs")) >= STALE_LARGE_AGE_DAYS and pct_used(s) >= STALE_LARGE_PCT)} for s in anomaly_sessions],
+        "agents": [{"agentId": agent_id, "sessionCount": item["count"], "totalTokens": item["totalTokens"], "peakOccupancy": round(item["maxPct"], 2), "models": [{"model": m, "count": c} for m, c in item["models"].most_common()]} for agent_id, item in sorted(agents.items())],
         "recommendations": build_recommendations(status, sessions, warn_pct, crit_pct),
     }
     return json.dumps(payload, ensure_ascii=False, indent=2)
@@ -363,7 +321,7 @@ def main() -> int:
     parser.add_argument("--warn-pct", type=float, default=40.0, help="Warn threshold for context occupancy percent.")
     parser.add_argument("--crit-pct", type=float, default=70.0, help="Critical threshold for context occupancy percent.")
     parser.add_argument("--min-pct", type=float, help="Only include sessions at or above this occupancy percent.")
-    parser.add_argument("--mode", choices=["full", "anomaly"], default="full", help="full=complete report; anomaly=only items worth attention.")
+    parser.add_argument("--mode", choices=["full", "anomaly", "brief"], default="full", help="full=complete report; anomaly=only items worth attention; brief=5-line summary.")
     parser.add_argument("--format", choices=["text", "json"], default="text")
     args = parser.parse_args()
 
@@ -388,6 +346,8 @@ def main() -> int:
     else:
         if args.mode == "anomaly":
             print(render_text_anomaly(status, sessions, args.warn_pct, args.crit_pct, args.agent))
+        elif args.mode == "brief":
+            print(render_text_brief(status, sessions, args.warn_pct, args.crit_pct, args.agent))
         else:
             print(render_text_full(status, sessions, args.top, args.warn_pct, args.crit_pct, args.agent))
     return 0
